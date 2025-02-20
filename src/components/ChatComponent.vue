@@ -8,20 +8,31 @@
     </el-container>
   </template>
   
-  <script setup>
-  import { ref } from 'vue';
-  import { ElMessage } from 'element-plus';
+  <script>
+  import axios from 'axios';
   
-  const message = ref('');
-  
-  const sendMessage = () => {
-    if (message.value.trim() === '') {
-      ElMessage.warning('消息不能为空');
-      return;
+  export default {
+    data() {
+      return {
+        messages: [],
+        inputMessage: ''
+      };
+    },
+    methods: {
+      async sendMessage() {
+        if (this.inputMessage.trim() === '') return;
+        const userMessage = { type: 'user', content: this.inputMessage };
+        this.messages.push(userMessage);
+        this.inputMessage = '';
+        try {
+          const response = await axios.post('/api/chat', { question: userMessage.content });
+          const botMessage = { type: 'bot', content: response.data.answer };
+          this.messages.push(botMessage);
+        } catch (error) {
+          console.error('请求出错:', error);
+        }
+      }
     }
-    // 这里可以添加发送消息到后端的逻辑，比如使用axios
-    console.log('发送的消息:', message.value);
-    message.value = '';
   };
   </script>
   

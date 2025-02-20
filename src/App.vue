@@ -3,7 +3,7 @@
     <el-container>
       <el-header class="header">
         <img src="@/assets/images/d67fb58e7a9e1d7bffb26479fc0298b0.png" alt="logo" class="logo" />
-        <span class="title">上铁智慧-铁路行业大模型</span>
+        <span class="title">上铁智慧 - 铁路行业大模型</span>
       </el-header>
       <el-container>
         <el-aside width="200px">
@@ -27,6 +27,17 @@
         </el-aside>
         <el-main>
           <h1>下午好, hmmy</h1>
+          <!-- 新增的显示对话区域 -->
+          <div v-if="conversation.length" class="conversation-area">
+            <div v-for="(item, index) in conversation" :key="index">
+              <div v-if="item.type === 'user'" class="user-message">
+                {{ item.text }}
+              </div>
+              <div v-else class="model-response">
+                {{ item.text }}
+              </div>
+            </div>
+          </div>
           <div class="input-group">
             <el-input
               v-model="inputValue"
@@ -52,26 +63,40 @@
 <script setup>
 import { ref } from 'vue';
 import { Search, Edit, Top } from '@element-plus/icons-vue';
+import axios from 'axios';
+
 //const activeIndex = ref('1');
 const dialogHistory = ref([
   '对话样例',
-
 ]);
 
 // 输入框的值
 const inputValue = ref('');
+// 存储对话记录，包含用户输入和模型返回
+const conversation = ref([]);
 
 // 发送消息的方法
-const sendMessage = () => {
+const sendMessage = async () => {
   if (inputValue.value) {
-    // 这里可以添加发送消息的逻辑
-    console.log('发送的消息:', inputValue.value);
+    try {
+      // 将用户输入添加到对话记录中
+      conversation.value.push({ type: 'user', text: inputValue.value });
+      // 更新历史对话记录
+      dialogHistory.value.push(inputValue.value);
 
-    // 将用户输入的消息添加到历史对话中
-    dialogHistory.value.push(inputValue.value);
+      const res = await axios.post(' http://localhost:8080/api/model/generate', {
+        prompt: inputValue.value
+      });
 
-    // 发送后清空输入框
-    inputValue.value = '';
+      // 将模型返回的结果添加到对话记录中
+      conversation.value.push({ type: 'model', text: res.data.data });
+
+      // 发送后清空输入框
+      inputValue.value = '';
+    } catch (error) {
+      console.error('调用失败:', error);
+      conversation.value.push({ type: 'model', text: '请求出错，请重试。' });
+    }
   }
 };
 </script>
@@ -107,5 +132,25 @@ const sendMessage = () => {
 
 .input-group .el-button {
   margin-left: 10px;
+}
+
+/* 新增的显示对话区域样式 */
+.conversation-area {
+  margin-bottom: 10px;
+}
+
+.user-message {
+  background-color: rgb(236, 236, 255);
+  color: rgb(0, 0, 0);
+  padding: 5px;
+  margin-bottom: 5px;
+  text-align: right;
+}
+
+.model-response {
+  background-color: #f0f2f5;
+  padding: 5px;
+  margin-bottom: 5px;
+  text-align: left;
 }
 </style>
